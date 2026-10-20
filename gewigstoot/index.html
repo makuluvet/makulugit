@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="af">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1E3A5F">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Gewigstoot">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
+<title>Gewigstoot-oefeninge</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: sticky week + day tabs, then a one-column (two on wide screens) list of animated exercise cards; rest timer pinned to the bottom. */
+:root{
+  --bg:#F3F5F8; --surface:#FFFFFF; --stage:#E9EEF4; --ink:#15191E; --muted:#4D5661; --line:#D3DAE2;
+  --band:#1E3A5F; --band-ink:#FFFFFF; --band-soft:#FDBA8C;
+  --navy:#1E3A5F; --accent:#C2410C; --accent-ink:#FFFFFF; --accent-soft:#FBE3D4;
+  --figR:#15191E; --figL:#8C99AD; --ball:#C2410C; --prop:#9AA3AF; --warn:#B91C1C;
+  --display:'Barlow Condensed', 'Arial Narrow', sans-serif; --body:'Barlow', 'Segoe UI', system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0F141A; --surface:#17202A; --stage:#1D2834; --ink:#E9EEF3; --muted:#A9B3BF; --line:#2B3846;
+  --band:#132840; --band-ink:#FFFFFF; --band-soft:#F7B48A;
+  --navy:#A9C4E6; --accent:#F08A4B; --accent-ink:#1A0E06; --accent-soft:#3A2418;
+  --figR:#E9EEF3; --figL:#6F7E92; --ball:#F08A4B; --prop:#5E6B7A; --warn:#F87171; color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#0F141A; --surface:#17202A; --stage:#1D2834; --ink:#E9EEF3; --muted:#A9B3BF; --line:#2B3846;
+  --band:#132840; --band-ink:#FFFFFF; --band-soft:#F7B48A;
+  --navy:#A9C4E6; --accent:#F08A4B; --accent-ink:#1A0E06; --accent-soft:#3A2418;
+  --figR:#E9EEF3; --figL:#6F7E92; --ball:#F08A4B; --prop:#5E6B7A; --warn:#F87171; color-scheme:dark }
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.45;padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--band)}
+.wrap{max-width:980px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header.top{background:var(--band);color:var(--band-ink)}
+header.top .wrap{padding-block:18px 14px;display:flex;flex-direction:column;gap:2px}
+.kicker{font-family:var(--display);font-weight:700;letter-spacing:.14em;font-size:13px;color:var(--band-soft);text-transform:uppercase}
+h1{margin:0;font-family:var(--display);font-weight:800;font-size:clamp(34px,8vw,52px);line-height:.95;text-wrap:balance}
+header.top p{margin:4px 0 0;font-size:15px;opacity:.92;max-width:60ch}
+
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+.bar .wrap{padding-block:10px;display:flex;flex-direction:column;gap:8px}
+.row{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.row::-webkit-scrollbar{display:none}
+.lbl{font-family:var(--display);font-weight:700;font-size:13px;letter-spacing:.1em;color:var(--muted);align-self:center;flex:none;padding-right:2px}
+.chip{flex:none;font:600 14px var(--body);border:1.5px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:7px 13px;min-height:38px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--navy);border-color:var(--navy);color:var(--surface)}
+.tab{flex:none;font:700 17px var(--display);letter-spacing:.04em;border:0;background:transparent;color:var(--muted);padding:8px 10px;min-height:42px;border-bottom:3px solid transparent;cursor:pointer;text-transform:uppercase}
+.tab[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent)}
+.chip:focus-visible,.tab:focus-visible,button:focus-visible,a:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+main .wrap{padding-block:16px 24px;display:flex;flex-direction:column;gap:14px}
+.intro{font-size:15px;color:var(--muted);max-width:65ch}
+.intro b{color:var(--ink)}
+.grid{display:grid;grid-template-columns:1fr;gap:14px}
+@media (min-width:720px){.grid{grid-template-columns:1fr 1fr}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;min-width:0}
+.card.wide{grid-column:1/-1}
+.stage{position:relative;background:var(--stage);border:0;padding:0;margin:0;width:100%;cursor:pointer;display:block}
+.stage svg{display:block;width:100%;height:auto;max-width:100%}
+.stage .state{position:absolute;right:10px;top:10px;font:700 12px var(--body);background:var(--surface);color:var(--ink);border-radius:999px;padding:4px 10px;border:1px solid var(--line)}
+.stage .step{position:absolute;left:10px;top:10px;font:800 16px var(--display);letter-spacing:.04em;background:var(--accent);color:var(--accent-ink);border-radius:8px;padding:3px 9px}
+.body{padding:12px 14px 14px;display:flex;flex-direction:column;gap:8px}
+.ttl{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.ttl h2{margin:0;font-family:var(--display);font-weight:800;font-size:24px;line-height:1.05}
+.ttl .en{display:block;font:500 13px var(--body);color:var(--muted);margin-top:2px}
+.dose{flex:none;font:700 15px var(--body);background:var(--accent-soft);color:var(--ink);border-radius:8px;padding:5px 10px;font-variant-numeric:tabular-nums;white-space:nowrap}
+ul.cues{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:3px;font-size:15px}
+.links{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+a.vid{display:inline-flex;align-items:center;gap:6px;font:700 15px var(--body);color:var(--accent);text-decoration:none;border:1.5px solid var(--accent);border-radius:10px;padding:7px 12px;min-height:40px}
+a.vid svg{flex:none}
+button.slow{font:700 14px var(--body);border:1.5px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;padding:7px 12px;min-height:40px;cursor:pointer}
+button.slow[aria-pressed="true"]{background:var(--navy);color:var(--surface);border-color:var(--navy)}
+.note{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:15px}
+.note b{color:var(--accent)}
+.warn{color:var(--warn);font-weight:700}
+
+/* figure */
+.fR{fill:none;stroke:var(--figR);stroke-width:8;stroke-linecap:round;stroke-linejoin:round}
+.fL{fill:none;stroke:var(--figL);stroke-width:8;stroke-linecap:round;stroke-linejoin:round}
+.fT{fill:none;stroke:var(--figR);stroke-width:12;stroke-linecap:round}
+.fH{fill:var(--figR)}
+.gnd{fill:var(--prop)}
+.prop{fill:var(--prop)}
+.propS{fill:none;stroke:var(--prop);stroke-width:7;stroke-linecap:round}
+.ball{fill:var(--ball)}
+.db{fill:var(--figR)}
+.dbL{fill:var(--figL)}
+
+.timer{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+.timer .wrap{display:flex;align-items:center;gap:8px;padding-block:10px}
+.timer .t{font:800 28px var(--display);font-variant-numeric:tabular-nums;min-width:64px}
+.timer .t.go{color:var(--accent)}
+.timer .what{font-size:13px;color:var(--muted);flex:1;min-width:0}
+.timer button{font:700 15px var(--body);border:1.5px solid var(--navy);background:var(--surface);color:var(--navy);border-radius:10px;padding:8px 12px;min-height:44px;cursor:pointer}
+.timer button.stop{border-color:var(--line);color:var(--muted)}
+@media (prefers-reduced-motion: reduce){ *{scroll-behavior:auto} }
+.stage svg{max-height:var(--stageH,none);margin:0 auto}
+@media (max-width:600px){
+  :root{--stageH:210px}
+  header.top .wrap{padding-block:10px 10px}
+  .kicker{display:none}
+  h1{font-size:28px}
+  header.top p{font-size:13px;margin-top:2px}
+  .bar .wrap{padding-block:6px;gap:4px}
+  .chip{padding:5px 11px;min-height:36px;font-size:14px}
+  .tab{font-size:16px;padding:6px 8px;min-height:40px}
+  .tab .long{display:none}
+  main .wrap{padding-block:10px 16px;gap:10px}
+  .intro{font-size:14px}
+  .grid{gap:10px}
+  .body{padding:10px 12px 12px;gap:6px}
+  .ttl h2{font-size:22px}
+  ul.cues{font-size:14px}
+  .timer .what{display:none}
+  .timer .wrap{justify-content:space-between;gap:6px;padding-block:8px}
+  .timer .t{font-size:26px;min-width:56px}
+  .timer button{padding:8px 10px;font-size:14px}
+}
+@media (min-width:601px){ .tab .short{display:none} }
+</style>
+</head>
+<body>
+
+<header class="top"><div class="wrap">
+  <div class="kicker">8-week plan · bladsy 5 op jou foon</div>
+  <h1>Gewigstoot-oefeninge</h1>
+  <p>Kies jou week en dag. Tik op die prentjie om te stop of te speel.</p>
+</div></header>
+
+<div class="bar"><div class="wrap">
+  <div class="row" role="group" aria-label="Kies die week">
+    <span class="lbl">WEEK</span>
+    <button class="chip" id="wk0" data-w="0" aria-pressed="false">1–2</button>
+    <button class="chip" id="wk1" data-w="1" aria-pressed="false">3–4</button>
+    <button class="chip" id="wk2" data-w="2" aria-pressed="false">5–6</button>
+    <button class="chip" id="wk3" data-w="3" aria-pressed="false">7</button>
+    <button class="chip" id="wk4" data-w="4" aria-pressed="false">8</button>
+  </div>
+  <div class="row" role="tablist" aria-label="Kies die sessie">
+    <button class="tab" role="tab" id="t-opwarm" data-t="opwarm">Opwarm</button>
+    <button class="tab" role="tab" id="t-a" data-t="a">A · <span class="long">Maandag</span><span class="short">Ma</span></button>
+    <button class="tab" role="tab" id="t-c" data-t="c">C · <span class="long">Woensdag</span><span class="short">Wo</span></button>
+    <button class="tab" role="tab" id="t-b" data-t="b">B · <span class="long">Vrydag</span><span class="short">Vr</span></button>
+    <button class="tab" role="tab" id="t-gly" data-t="gly"><span class="long">Gly-tegniek</span><span class="short">Gly</span></button>
+  </div>
+</div></div>
+
+<main><div class="wrap">
+  <p class="intro" id="intro"></p>
+  <div class="grid" id="grid"></div>
+  <div class="note" id="foot"></div>
+</div></main>
+
+<div class="timer" role="region" aria-label="Rus-horlosie"><div class="wrap">
+  <div class="t" id="tm" aria-live="polite">0:00</div>
+  <div class="what" id="tmw">Rus tussen stelle</div>
+  <button id="r60" aria-label="Rus 60 sekondes">Rus 60 s</button>
+  <button id="r90" aria-label="Rus 90 sekondes">Rus 90 s</button>
+  <button id="rst" class="stop" aria-label="Stop die horlosie">Stop</button>
+</div></div>
+
+<script>
+(function(){
+const GROUND=146, D2R=Math.PI/180;
+const dir=a=>[Math.sin(a*D2R),Math.cos(a*D2R)];
+const add=(p,d,l)=>[p[0]+d[0]*l,p[1]+d[1]*l];
+const clone=o=>JSON.parse(JSON.stringify(o));
+const BASE={t:0,hd:0,up:0,R:{th:0,sh:0,ft:90},L:{th:0,sh:0,ft:90},aR:{u:8,f:12},aL:{u:-8,f:-4}};
+function merge(a,b){for(const k in b){if(b[k]&&typeof b[k]==='object'&&!Array.isArray(b[k])){a[k]=merge(a[k]||{},b[k]);}else a[k]=b[k];}return a;}
+const P=o=>merge(clone(BASE),o||{});
+
+function fk(p){
+  const hip=[0,0], t=p.t*D2R, up=[Math.sin(t),-Math.cos(t)];
+  const neck=add(hip,up,44), sh=add(hip,up,39), h=(p.t+(p.hd||0))*D2R;
+  const head=[neck[0]+Math.sin(h)*11, neck[1]-Math.cos(h)*11];
+  const leg=g=>{const k=add(hip,dir(g.th),31),a=add(k,dir(g.sh),32),to=add(a,dir(g.ft),12);return [k,a,to];};
+  const arm=g=>{const e=add(sh,dir(g.u),21),hh=add(e,dir(g.f),21);return [e,hh];};
+  const [kR,aR,tR]=leg(p.R),[kL,aL,tL]=leg(p.L),[eR,hR]=arm(p.aR),[eL,hL]=arm(p.aL);
+  return {hip,neck,sh,head,kR,aR,tR,kL,aL,tL,eR,hR,eL,hL};
+}
+function place(J,p,ex){
+  let dx,dy;
+  if(ex.pin){const j=J[ex.pin],at=p.at||ex.at;dx=at[0]-j[0];dy=at[1]-j[1];}
+  else{const ys=['aR','tR','aL','tL','hR','hL','eR','eL','kR','kL'].map(k=>J[k][1]);dy=GROUND-Math.max(...ys);dx=(p.x==null?100:p.x);}
+  dy-=(p.up||0);
+  const out={};for(const k in J)out[k]=[J[k][0]+dx,J[k][1]+dy];return out;
+}
+function lerpObj(a,b,u){if(typeof a==='number')return a+(b-a)*u;if(Array.isArray(a))return a.map((v,i)=>v+(b[i]-v)*u);const o={};for(const k in a){o[k]=(b&&k in b)?lerpObj(a[k],b[k],u):a[k];}return o;}
+const ease=u=>u<.5?4*u*u*u:1-Math.pow(-2*u+2,3)/2;
+function ballPos(J,spec){
+  if(!spec)return null;
+  if(spec==='R')return [J.hR[0]+2,J.hR[1]-6];
+  if(spec==='both')return [(J.hR[0]+J.hL[0])/2,(J.hR[1]+J.hL[1])/2-5];
+  return spec;
+}
+function solve(ex,k){ // joints + ball for keyframe k (cached)
+  const f=ex.kf[k];
+  if(f._J)return f._J;
+  let J;
+  if(f.abs){J=f.abs;}else{J=place(fk(f.p),f.p,ex);}
+  f._J={J,ball:ballPos(J,f.ball)};
+  return f._J;
+}
+function frame(ex,time){
+  let tm=time%ex.total, n=ex.kf.length;
+  for(let i=0;i<n;i++){
+    const f=ex.kf[i], h=f.h||0, d=f.d==null?600:f.d;
+    if(tm<h)return {J:solve(ex,i).J,ball:solve(ex,i).ball,lab:f.lab};
+    tm-=h;
+    if(tm<d){
+      const j=(i+1)%n, u0=tm/d, u=ex.lin?u0:ease(u0), g=ex.kf[j];
+      const A=solve(ex,i),B=solve(ex,j);
+      let J;
+      if(f.abs||g.abs){J=lerpObj(A.J,B.J,u);}
+      else{const p=lerpObj(f.p,g.p,u);J=place(fk(p),p,ex);}
+      const ball=(A.ball&&B.ball)?lerpObj(A.ball,B.ball,u):(A.ball||null);
+      return {J,ball,lab:u<.5?f.lab:g.lab};
+    }
+    tm-=d;
+  }
+  return {J:solve(ex,0).J,ball:solve(ex,0).ball,lab:ex.kf[0].lab};
+}
+
+/* glide poses from the printed page 2, scaled into this stage */
+const g=(x,y)=>[x*1.2+2,y*1.1+5];
+function GP(o){const r={};for(const k in o)r[k]=g(o[k][0],o[k][1]);return r;}
+const GL=[
+ GP({head:[44,21],neck:[46,34],hip:[48,74],sh:[46,38],kR:[47,102],aR:[46,128],tR:[36,130],kL:[56,103],aL:[63,125],tL:[68,130],eR:[58,41],hR:[41,34],eL:[37,52],hL:[28,61],b:[37,33]}),
+ GP({head:[25,64],neck:[35,73],hip:[58,92],sh:[36,76],kR:[40,104],aR:[44,128],tR:[34,130],kL:[48,112],aL:[58,125],tL:[63,130],eR:[48,69],hR:[30,75],eL:[32,94],hL:[30,109],b:[27,75]}),
+ GP({head:[31,69],neck:[41,77],hip:[64,92],sh:[42,80],kR:[50,108],aR:[44,127],tR:[35,130],kL:[90,100],aL:[114,106],tL:[119,100],eR:[55,73],hR:[35,79],eL:[36,97],hL:[33,111],b:[32,80]}),
+ GP({head:[45,51],neck:[52,60],hip:[72,88],sh:[54,64],kR:[61,108],aR:[66,128],tR:[57,130],kL:[100,108],aL:[128,127],tL:[137,130],eR:[68,56],hR:[48,58],eL:[40,66],hL:[26,70],b:[45,59]}),
+ GP({head:[89,34],neck:[88,46],hip:[90,84],sh:[88,50],kR:[80,106],aR:[71,122],tR:[78,130],kL:[110,106],aL:[128,127],tL:[137,130],eR:[74,48],hR:[96,44],eL:[98,58],hL:[93,68],b:[99,43]}),
+ GP({head:[120,33],neck:[116,45],hip:[110,80],sh:[116,50],kR:[97,100],aR:[86,114],tR:[81,121],kL:[118,104],aL:[126,127],tL:[135,130],eR:[128,38],hR:[140,27],eL:[106,57],hL:[108,68],b:[148,20]})
+];
+const GK=(i,o)=>Object.assign({abs:GL[i],ball:GL[i].b},o);
+const yt=q=>'https://www.youtube.com/results?search_query='+encodeURIComponent(q);
+
+/* ---------- exercises ---------- */
+const EX={
+opwarm:[
+ {id:'draf',n:'Stadig draf',en:'Easy jog',dose:'3 min',q:'easy jogging form warm up',
+  cues:['Klein treetjies, op die voorvoet.','Arms swaai saam, skouers los.'],
+  kf:[{p:P({t:8,up:3,R:{th:35,sh:-25},L:{th:-25,sh:-75,ft:30},aR:{u:-35,f:55},aL:{u:35,f:115}}),d:330},
+      {p:P({t:8,up:3,L:{th:35,sh:-25},R:{th:-25,sh:-75,ft:30},aL:{u:-35,f:55},aR:{u:35,f:115}}),d:330}]},
+ {id:'sirkels',n:'Armsirkels + beenswaaie',en:'Arm circles + leg swings',dose:'×10 elk',q:'arm circles and leg swings warm up',lin:true,
+  cues:['Groot armsirkels, vorentoe en agtertoe.','Hou aan iets vas en swaai een been vorentoe en agtertoe.'],
+  kf:[{p:P({aR:{u:0,f:0},aL:{u:0,f:0}}),d:380},{p:P({aR:{u:90,f:90},aL:{u:90,f:90}}),d:380},{p:P({aR:{u:180,f:180},aL:{u:180,f:180}}),d:380},{p:P({aR:{u:270,f:270},aL:{u:270,f:270}}),d:380},
+      {p:P({aR:{u:360,f:360},aL:{u:360,f:360}}),d:0},
+      {p:P({aR:{u:0,f:0},aL:{u:0,f:0}}),d:450},{p:P({R:{th:60,sh:55},aR:{u:30,f:30},aL:{u:-20,f:-20}}),d:450},{p:P({R:{th:-35,sh:-40},aR:{u:-20,f:-20},aL:{u:30,f:30}}),d:450},{p:P({R:{th:60,sh:55},aR:{u:30,f:30},aL:{u:-20,f:-20}}),d:450}]},
+ {id:'treë',n:'Groot treë + draai',en:'Walking lunge with twist',dose:'×8 elke been',q:'walking lunge with twist warm up',
+  cues:['Groot tree vorentoe; die agterste knie sak amper tot op die grond.','Draai die bolyf na die kant van die voorste been.'],
+  kf:[{p:P({}),d:600},{p:P({R:{th:85,sh:0},L:{th:-15,sh:-95,ft:35},aR:{u:70,f:110},aL:{u:70,f:110}}),h:350,d:600},
+      {p:P({}),d:600},{p:P({L:{th:85,sh:0},R:{th:-15,sh:-95,ft:35},aR:{u:70,f:110},aL:{u:70,f:110}}),h:350,d:600}]},
+ {id:'ruspe',n:'Ruspe-loop',en:'Inchworm',dose:'×5',q:'inchworm exercise for kids',pin:'tR',at:[52,146],
+  cues:['Buk en sit die hande plat op die grond.','Loop met die hande uit tot in ’n plank, en dan terug.'],
+  kf:[{p:P({}),h:300,d:800},{p:P({t:122,hd:-20,aR:{u:-2,f:-2},aL:{u:-2,f:-2}}),d:700},{p:P({t:70,R:{th:-70,sh:-70,ft:60},L:{th:-70,sh:-70,ft:60},aR:{u:-4,f:-4},aL:{u:-4,f:-4}}),h:500,d:700},{p:P({t:122,hd:-20,aR:{u:-2,f:-2},aL:{u:-2,f:-2}}),d:800}]},
+ {id:'huppels',n:'A-huppels',en:'A-skips',dose:'2 × 15 m',q:'a skip running drill',
+  cues:['Knie hoog, tone wys op.','Die teenoorgestelde arm swaai saam.'],
+  kf:[{p:P({up:5,R:{th:90,sh:0,ft:80},L:{th:-6,sh:-6,ft:120},aL:{u:60,f:140},aR:{u:-40,f:30}}),d:340},
+      {p:P({up:5,L:{th:90,sh:0,ft:80},R:{th:-6,sh:-6,ft:120},aR:{u:60,f:140},aL:{u:-40,f:30}}),d:340}]},
+ {id:'stote',n:'3 maklike staande stote',en:'Easy standing puts',dose:'×3',q:'shot put standing throw beginners',pin:'tR',at:[96,146],
+  cues:['Bal teen die nek, elmboog hoog.','Buig, stoot op en uit — net 50%.'],
+  kf:[{p:P({aR:{u:100,f:255}}),ball:'R',h:300,d:600},{p:P({t:12,R:{th:40,sh:-25},L:{th:40,sh:-25},aR:{u:100,f:255}}),ball:'R',d:350},
+      {p:P({t:-6,R:{th:0,sh:0,ft:150},L:{th:0,sh:0,ft:150},aR:{u:140,f:140},aL:{u:20,f:20}}),ball:'R',d:450},
+      {p:P({t:-6,R:{th:0,sh:0,ft:150},L:{th:0,sh:0,ft:150},aR:{u:140,f:140},aL:{u:20,f:20}}),ball:[196,40],h:300,d:0}]}
+],
+a:[
+ {id:'beker',n:'Beker-hurksit',en:'Goblet squat',reps:['2×10 lyf','3×10 · 4 kg','3×8 · 12 kg*','3×6 · 12 kg','2×6 · 4 kg'],q:'goblet squat for kids beginners',pin:'tR',at:[112,146],db:'chest',
+  cues:['Hou die handgewig met albei hande teen die bors.','Sit tussen die hakke af; rug reguit, hakke plat.','Knieë wys dieselfde kant toe as die tone.'],
+  kf:[{p:P({aR:{u:28,f:172},aL:{u:28,f:172}}),h:400,d:1000},{p:P({t:32,R:{th:88,sh:-22},L:{th:88,sh:-22},aR:{u:60,f:190},aL:{u:60,f:190}}),h:300,d:900}]},
+ {id:'bankdruk',n:'Bankdruk',en:'Dumbbell bench press',reps:['2×10 · 4 kg','3×10 · 4 kg','3×12 · 4 kg','3×10 · 4 kg','2×8 · 4 kg'],q:'dumbbell bench press beginner form',pin:'hip',at:[122,104],bench:'flat',db:'both',
+  cues:['Lê plat op die bankie, voete op die grond.','Laat sak stadig tot langs die bors, druk dan reguit op.'],
+  kf:[{p:P({t:-90,hd:0,R:{th:75,sh:0},L:{th:70,sh:0},aR:{u:180,f:180},aL:{u:180,f:180}}),h:300,d:1000},{p:P({t:-90,R:{th:75,sh:0},L:{th:70,sh:0},aR:{u:60,f:180},aL:{u:60,f:180}}),h:200,d:800}]},
+ {id:'opstap',n:'Opstap',en:'Step-up',reps:['2×6 lyf','3×8 lyf','3×8 · 4 kg','3×6 · 4 kg','2×5 lyf'],q:'bench step up exercise form',pin:'tR',at:[152,113],bench:'step',
+  cues:['Hele voet op die bankie.','Stoot deur die hak, bring die ander knie hoog op.','Stap stadig af. Doen elke been.'],
+  kf:[{p:P({R:{th:90,sh:0},L:{th:-6,sh:-6,ft:100}}),h:400,d:900},{p:P({R:{th:0,sh:0},L:{th:90,sh:0},aL:{u:-30,f:-10},aR:{u:40,f:100}}),h:400,d:900}]},
+ {id:'opstoot',n:'Opstoot',en:'Push-up (begin met hande op die bankie)',reps:['2×8 op bankie','3×8 op bankie','3×6 vloer','3×8 vloer','2×6 vloer'],q:'incline push up for beginners',pin:'tR',at:[28,146],
+  cues:['Weke 1–4: hande op die bankie, dit is makliker.','Lyf reguit soos ’n plank; bors sak tot amper op die grond.'],
+  kf:[{p:P({t:68,hd:10,R:{th:-68,sh:-68,ft:70},L:{th:-68,sh:-68,ft:70},aR:{u:0,f:0},aL:{u:0,f:0}}),h:250,d:800},{p:P({t:84,hd:10,R:{th:-84,sh:-84,ft:70},L:{th:-84,sh:-84,ft:70},aR:{u:-100,f:10},aL:{u:-100,f:10}}),h:150,d:700}]},
+ {id:'plank',n:'Plank',en:'Forearm plank',reps:['2×20 s','3×30 s','3×40 s','3×40 s','2×30 s'],q:'forearm plank form for kids',pin:'tR',at:[30,146],
+  cues:['Op die elmboë, lyf in ’n reguit lyn van kop tot hakke.','Knyp die boude; moenie die heupe laat sak of opsteek nie.'],
+  kf:[{p:P({t:79,hd:12,R:{th:-79,sh:-79,ft:70},L:{th:-79,sh:-79,ft:70},aR:{u:0,f:90},aL:{u:0,f:90}}),h:1400,d:900},{p:P({t:77,hd:12,R:{th:-77,sh:-77,ft:70},L:{th:-77,sh:-77,ft:70},aR:{u:0,f:90},aL:{u:0,f:90}}),h:600,d:900}]}
+],
+c:[
+ {id:'verspring',n:'Verspring',en:'Standing broad jump',reps:['3×3','3×4','4×4','3×4','2×3'],q:'standing broad jump technique',
+  cues:['Swaai die arms terug, buig, en spring ver vorentoe.','Land sag op twee voete en staan doodstil.'],
+  kf:[{p:P({x:46}),h:300,d:600},{p:P({x:46,t:45,R:{th:62,sh:-30},L:{th:62,sh:-30},aR:{u:-70,f:-60},aL:{u:-70,f:-60}}),d:260},
+      {p:P({x:70,up:10,t:30,R:{th:-20,sh:-20,ft:150},L:{th:-20,sh:-20,ft:150},aR:{u:160,f:170},aL:{u:160,f:170}}),d:300},
+      {p:P({x:108,up:30,t:20,R:{th:75,sh:10},L:{th:75,sh:10},aR:{u:100,f:100},aL:{u:100,f:100}}),d:280},
+      {p:P({x:140,t:40,R:{th:78,sh:-25},L:{th:78,sh:-25},aR:{u:80,f:90},aL:{u:80,f:90}}),d:500},
+      {p:P({x:140}),h:600,d:0}]},
+ {id:'hurksprong',n:'Hurk-sprong',en:'Squat jump',reps:['2×5','3×5','3×6','3×5','2×4'],q:'squat jump proper form',
+  cues:['Hurk, swaai die arms en spring so hoog as jy kan.','Land saggies met gebuigde knieë.'],
+  kf:[{p:P({t:35,R:{th:82,sh:-25},L:{th:82,sh:-25},aR:{u:-40,f:-30},aL:{u:-40,f:-30}}),h:300,d:280},
+      {p:P({up:32,R:{th:0,sh:0,ft:160},L:{th:0,sh:0,ft:160},aR:{u:170,f:175},aL:{u:170,f:175}}),d:320},
+      {p:P({t:35,R:{th:82,sh:-25},L:{th:82,sh:-25},aR:{u:60,f:80},aL:{u:60,f:80}}),h:300,d:500}]},
+ {id:'borsstoot',n:'Borsstoot',en:'Chest push throw (4 kg)',reps:['2×5','3×5','3×6','3×6','2×4'],q:'medicine ball chest pass throw technique',
+  cues:['Hou die 4 kg bal met twee hande by die bors.','Tree vorentoe en stoot die bal reguit weg, arms heeltemal uit.'],
+  kf:[{p:P({x:70,aR:{u:30,f:160},aL:{u:30,f:160}}),ball:'both',h:400,d:450},
+      {p:P({x:84,t:10,R:{th:30,sh:5},L:{th:-22,sh:-25,ft:120},aR:{u:85,f:85},aL:{u:85,f:85}}),ball:'both',d:350},
+      {p:P({x:84,t:10,R:{th:30,sh:5},L:{th:-22,sh:-25,ft:120},aR:{u:85,f:85},aL:{u:85,f:85}}),ball:[198,96],h:250,d:0}]},
+ {id:'agteroor',n:'Agteroor-gooi',en:'Backward overhead throw (4 kg)',reps:['—','2×5','3×5','3×5','2×3'],q:'backward overhead medicine ball throw',warn:'Kyk eers of daar niemand agter jou is nie!',
+  cues:['Hurk met die bal tussen die bene.','Spring op en gooi die bal agtertoe oor jou kop.'],
+  kf:[{p:P({x:122,t:55,R:{th:75,sh:-25},L:{th:75,sh:-25},aR:{u:5,f:5},aL:{u:5,f:5}}),ball:'both',h:500,d:450},
+      {p:P({x:122,up:8,t:-12,R:{th:0,sh:0,ft:150},L:{th:0,sh:0,ft:150},aR:{u:205,f:205},aL:{u:205,f:205}}),ball:'both',d:350},
+      {p:P({x:122,up:0,t:-8,aR:{u:200,f:200},aL:{u:200,f:200}}),ball:[4,24],h:300,d:0}]},
+ {id:'naellope',n:'Naellope 20 m',en:'Sprints',reps:['4','6','8','6','4'],q:'sprint technique for kids',
+  cues:['Hardloop vinnig vir 20 m; stap terug om te rus.','Knieë op, arms pomp hard.'],
+  kf:[{p:P({t:14,up:5,R:{th:75,sh:-10},L:{th:-30,sh:-60,ft:40},aR:{u:-55,f:35},aL:{u:60,f:145}}),d:230},
+      {p:P({t:14,up:5,L:{th:75,sh:-10},R:{th:-30,sh:-60,ft:40},aL:{u:-55,f:35},aR:{u:60,f:145}}),d:230}]},
+ {id:'stasies',n:'Stasies',en:'Circuit: jumping jacks, mountain climbers, squats, plank',reps:['8 min draf-stap','2 rondtes','3 rondtes','2 rondtes','rus'],q:'mountain climbers exercise for beginners',pin:'hR',at:[150,146],
+  cues:['30 s werk, 30 s rus, dan die volgende een.','Sterspronge → bergklim (gewys) → hurksit → plank.'],
+  kf:[{p:P({t:68,hd:10,R:{th:60,sh:-60,ft:60},L:{th:-68,sh:-68,ft:70},aR:{u:0,f:0},aL:{u:0,f:0}}),d:280},
+      {p:P({t:68,hd:10,L:{th:60,sh:-60,ft:60},R:{th:-68,sh:-68,ft:70},aR:{u:0,f:0},aL:{u:0,f:0}}),d:280}]}
+],
+b:[
+ {id:'rdl',n:'Roemeense optel',en:'Romanian deadlift (RDL)',reps:['2×10 · 2×4 kg','3×10 · 2×4 kg','3×8 · 12 kg*','3×8 · 12 kg','2×6 · 2×4 kg'],q:'dumbbell romanian deadlift form beginner',pin:'tR',at:[118,146],db:'both',
+  cues:['Knieë effe gebuig; stoot die boude agtertoe.','Rug bly plat; die gewigte gly langs die bene af.','Jy voel die rek agter in die bene.'],
+  kf:[{p:P({aR:{u:0,f:0},aL:{u:0,f:0}}),h:400,d:1100},{p:P({t:75,hd:-15,R:{th:12,sh:-4},L:{th:12,sh:-4},aR:{u:0,f:0},aL:{u:0,f:0}}),h:300,d:900}]},
+ {id:'roei',n:'Eenarm-roei',en:'One-arm dumbbell row',reps:['2×10 · 4 kg','3×10 · 4 kg','3×8 · 12 kg*','3×8 · 12 kg','2×6 · 4 kg'],q:'one arm dumbbell row with bench',pin:'hL',at:[150,117],bench:'row',db:'R',
+  cues:['Een hand op die bankie, rug plat soos ’n tafel.','Trek die elmboog op na die plafon, laat stadig sak. Doen elke kant.'],
+  kf:[{p:P({t:80,hd:-10,R:{th:-10,sh:-10},L:{th:22,sh:4},aR:{u:0,f:0},aL:{u:0,f:0}}),h:300,d:700},{p:P({t:80,hd:-10,R:{th:-10,sh:-10},L:{th:22,sh:4},aR:{u:-55,f:5},aL:{u:0,f:0}}),h:300,d:800}]},
+ {id:'skuins',n:'Skuins bankdruk',en:'Incline dumbbell press',reps:['2×8 · 4 kg','3×8 · 4 kg','3×10 · 4 kg','3×8 · 4 kg','2×6 · 4 kg'],q:'incline dumbbell press for beginners',pin:'hip',at:[92,108],bench:'incline',db:'both',
+  cues:['Sit met die rug plat teen die skuins bankie.','Druk die gewigte reguit op, laat stadig sak tot by die skouers.'],
+  kf:[{p:P({t:-40,R:{th:80,sh:0},L:{th:76,sh:0},aR:{u:175,f:175},aL:{u:175,f:175}}),h:300,d:1000},{p:P({t:-40,R:{th:80,sh:0},L:{th:76,sh:0},aR:{u:40,f:170},aL:{u:40,f:170}}),h:200,d:800}]},
+ {id:'tasdra',n:'Tas-dra',en:'Suitcase carry',reps:['2×20 m · 4 kg','3×20 m · 4 kg','3×20 m · 12 kg*','3×25 m · 12 kg','2×20 m · 4 kg'],q:'suitcase carry exercise',db:'R',
+  cues:['Een handgewig aan een kant, soos ’n tas.','Loop regop; moenie skeef hang nie. Ruil hande.'],
+  kf:[{p:P({R:{th:24,sh:0},L:{th:-20,sh:-35,ft:70},aR:{u:2,f:2},aL:{u:-20,f:-10}}),d:450},
+      {p:P({L:{th:24,sh:0},R:{th:-20,sh:-35,ft:70},aR:{u:2,f:2},aL:{u:20,f:35}}),d:450}]},
+ {id:'syplank',n:'Syplank',en:'Side plank (van voor gesien)',reps:['2×15 s','3×20 s','3×25 s','3×30 s','2×20 s'],q:'side plank for beginners',pin:'tR',at:[30,146],
+  cues:['Op een elmboog; lyf reguit van kop tot voete.','Hou die heupe hoog. Doen albei kante.'],
+  kf:[{p:P({t:76,hd:0,R:{th:-76,sh:-76,ft:100},L:{th:-76,sh:-76,ft:100},aR:{u:0,f:90},aL:{u:-60,f:-115}}),h:1400,d:900},{p:P({t:74,hd:0,R:{th:-74,sh:-74,ft:100},L:{th:-74,sh:-74,ft:100},aR:{u:0,f:90},aL:{u:-60,f:-115}}),h:600,d:900}]}
+],
+gly:[
+ {id:'gly',wide:true,n:'Die gly: alles saam',en:'Shot put glide technique',dose:'Kyk stadig',q:'shot put glide technique for beginners',stopboard:true,slow:true,
+  cues:['1 Begin → 2 Sak → 3 Skop → 4 Kragposisie → 5 Lig & draai → 6 Stoot.','Stadig begin, vinnig klaarmaak: “sak … skop-land-STOOT”.','Tik “Stadig” om dit in stadige aksie te sien.'],
+  kf:[GK(0,{lab:'1 · Begin',h:900,d:700}),GK(1,{lab:'2 · Sak',h:400,d:260}),GK(2,{lab:'3 · Skop',d:220}),GK(3,{lab:'4 · Kragposisie',h:500,d:240}),GK(4,{lab:'5 · Lig & draai',d:200}),GK(5,{lab:'6 · Stoot',d:350}),
+      {abs:GL[5],ball:[196,4],lab:'6 · Stoot',h:900,d:0}]},
+ {id:'staande',n:'Staande stoot',en:'Standing throw from the power position',dose:'Belangrikste oefening',q:'shot put standing throw power position drill',stopboard:true,slow:true,
+  cues:['Begin in die kragposisie (stap 4).','Lig, draai die heupe, en stoot (stap 5–6).'],
+  kf:[GK(3,{lab:'4 · Kragposisie',h:900,d:350}),GK(4,{lab:'5 · Lig & draai',d:250}),GK(5,{lab:'6 · Stoot',d:350}),{abs:GL[5],ball:[196,4],lab:'6 · Stoot',h:800,d:0}]}
+]};
+
+const INTRO={
+ opwarm:'<b>Elke sessie, 10 minute.</b> Doen dit altyd eerste — dit keer beserings.',
+ a:'<b>Maandag: bene + druk.</b> Eers 20 min tegniek, dan hierdie. Rus 60–90 s tussen stelle.',
+ c:'<b>Woensdag: plofkrag + fiksheid.</b> Gooi net op oop gras, met niemand naby nie.',
+ b:'<b>Vrydag: heupe + trek + maagspiere.</b> Eers 20 min tegniek, dan hierdie. Rus 60–90 s tussen stelle.',
+ gly:'<b>Die gly-tegniek.</b> Kyk stap vir stap; vergelyk met bladsy 2 en 3 van die plan. Regshandig getoon.'
+};
+const FOOT={
+ opwarm:'<b>Afkoel na elke sessie (5 min):</b> 30 s elk — voorkant van die heup, agterkant van die bobeen, boude, bors teen ’n deurkosyn, skouer oor die lyf, pols en vingers.',
+ a:'<b>* 12 kg:</b> net as elke 4 kg-herhaling mooi en maklik is. As 12 kg die vorm breek, gaan terug na 4 kg en doen eerder 2 ekstra herhalings.',
+ c:'<b>Veilig:</b> net die gewigstoot-bal word gegooi — <span class="warn">nooit ’n handgewig nie</span>.',
+ b:'<b>* 12 kg:</b> net as elke 4 kg-herhaling mooi en maklik is. As 12 kg die vorm breek, gaan terug na 4 kg en doen eerder 2 ekstra herhalings.',
+ gly:'<b>Die video-skakels</b> gaan na YouTube-soektogte in Engels. Kies ’n kort video van ’n afrigter; begin met die stadige weergawe.'
+};
+
+/* ---------- build ---------- */
+const NS='http://www.w3.org/2000/svg';
+const el=(t,a,p)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e;};
+const pts=(J,ks)=>ks.map(k=>J[k][0].toFixed(1)+','+J[k][1].toFixed(1)).join(' ');
+const cards=[];
+let week=0, tab='opwarm';
+try{const w=parseInt(localStorage.getItem('gs-week'),10);if(w>=0&&w<=4)week=w;}catch(e){}
+try{const t=localStorage.getItem('gs-tab');if(t&&EX[t])tab=t;}catch(e){}
+const h=(location.hash||'').slice(1);if(EX[h])tab=h;
+const reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function buildStage(ex){
+  const svg=el('svg',{viewBox:'0 -26 200 182','aria-hidden':'true'});
+  el('rect',{class:'gnd',x:0,y:150,width:200,height:4},svg);
+  if(ex.bench==='flat'){el('rect',{class:'prop',x:40,y:110,width:110,height:7,rx:2},svg);el('rect',{class:'prop',x:52,y:117,width:6,height:33},svg);el('rect',{class:'prop',x:132,y:117,width:6,height:33},svg);}
+  if(ex.bench==='step'){el('rect',{class:'prop',x:126,y:117,width:70,height:33,rx:3},svg);}
+  if(ex.bench==='row'){el('rect',{class:'prop',x:134,y:121,width:64,height:7,rx:2},svg);el('rect',{class:'prop',x:142,y:128,width:6,height:22},svg);el('rect',{class:'prop',x:184,y:128,width:6,height:22},svg);}
+  if(ex.bench==='incline'){el('rect',{class:'prop',x:66,y:113,width:50,height:7,rx:2},svg);el('line',{class:'propS',x1:76,y1:114,x2:46,y2:58},svg);el('rect',{class:'prop',x:84,y:120,width:6,height:30},svg);}
+  if(ex.stopboard){el('rect',{class:'prop',x:178,y:136,width:9,height:14,rx:2},svg);}
+  const r={};
+  r.lL=el('polyline',{class:'fL'},svg); r.aL=el('polyline',{class:'fL'},svg);
+  r.dbL=el('circle',{class:'dbL',r:5},svg);
+  r.t=el('line',{class:'fT'},svg);
+  r.lR=el('polyline',{class:'fR'},svg); r.aR=el('polyline',{class:'fR'},svg);
+  r.hd=el('circle',{class:'fH',r:10.5},svg);
+  r.dbR=el('circle',{class:'db',r:5},svg);
+  r.ball=el('circle',{class:'ball',r:7},svg);
+  return {svg,r};
+}
+function draw(c,fr){
+  const J=fr.J,r=c.r,ex=c.ex;
+  r.lL.setAttribute('points',pts(J,['hip','kL','aL','tL']));
+  r.aL.setAttribute('points',pts(J,['sh','eL','hL']));
+  r.lR.setAttribute('points',pts(J,['hip','kR','aR','tR']));
+  r.aR.setAttribute('points',pts(J,['sh','eR','hR']));
+  r.t.setAttribute('x1',J.hip[0]);r.t.setAttribute('y1',J.hip[1]);r.t.setAttribute('x2',J.neck[0]);r.t.setAttribute('y2',J.neck[1]);
+  r.hd.setAttribute('cx',J.head[0]);r.hd.setAttribute('cy',J.head[1]);
+  const big=(week>=2&&week<=3)&&ex.reps&&/12 kg/.test(ex.reps[week]);
+  const rad=big?8:5.5;
+  if(ex.db==='chest'){r.dbR.setAttribute('r',big?9:6);r.dbR.setAttribute('cx',(J.hR[0]+J.hL[0])/2+3);r.dbR.setAttribute('cy',(J.hR[1]+J.hL[1])/2);r.dbR.style.display='';r.dbL.style.display='none';}
+  else{
+    const sR=ex.db==='both'||ex.db==='R', sL=ex.db==='both';
+    r.dbR.style.display=sR?'':'none'; r.dbL.style.display=sL?'':'none';
+    r.dbR.setAttribute('r',ex.db==='R'||ex.id==='rdl'?rad:5.5); r.dbL.setAttribute('r',ex.id==='rdl'?rad:5.5);
+    r.dbR.setAttribute('cx',J.hR[0]);r.dbR.setAttribute('cy',J.hR[1]);r.dbL.setAttribute('cx',J.hL[0]);r.dbL.setAttribute('cy',J.hL[1]);
+  }
+  if(fr.ball){r.ball.style.display='';r.ball.setAttribute('cx',fr.ball[0]);r.ball.setAttribute('cy',fr.ball[1]);}else r.ball.style.display='none';
+  if(c.step){c.step.textContent=fr.lab||'';c.step.hidden=!fr.lab;}
+}
+function doseText(ex){return ex.reps?ex.reps[week]:ex.dose;}
+const vidIcon='<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="4" fill="currentColor"></rect><path d="M10 9l5 3-5 3z" fill="var(--surface)"></path></svg>';
+
+function render(){
+  document.querySelectorAll('.tab').forEach(b=>{const on=b.dataset.t===tab;b.setAttribute('aria-selected',on);b.tabIndex=on?0:-1;});
+  document.querySelectorAll('.chip').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.w===week)));
+  document.getElementById('intro').innerHTML=INTRO[tab];
+  document.getElementById('foot').innerHTML=FOOT[tab];
+  const grid=document.getElementById('grid'); grid.innerHTML=''; cards.length=0;
+  EX[tab].forEach((ex,i)=>{
+    if(!ex.total){ex.total=ex.kf.reduce((s,f)=>s+(f.h||0)+(f.d==null?600:f.d),0);}
+    const card=document.createElement('article'); card.className='card'+(ex.wide?' wide':'');
+    const st=document.createElement('button'); st.className='stage'; st.type='button'; st.id='st-'+ex.id;
+    st.setAttribute('aria-label','Animasie van '+ex.n+'. Tik om te stop of te speel.');
+    const {svg,r}=buildStage(ex); st.appendChild(svg);
+    const badge=document.createElement('span'); badge.className='state'; st.appendChild(badge);
+    let step=null; if(ex.kf.some(f=>f.lab)){step=document.createElement('span');step.className='step';st.appendChild(step);}
+    card.appendChild(st);
+    const body=document.createElement('div'); body.className='body';
+    body.innerHTML='<div class="ttl"><h2>'+ex.n+'<span class="en">'+ex.en+'</span></h2><span class="dose">'+doseText(ex)+'</span></div>'+
+      '<ul class="cues">'+ex.cues.map(c=>'<li>'+c+'</li>').join('')+(ex.warn?'<li class="warn">'+ex.warn+'</li>':'')+'</ul>'+
+      '<div class="links"><a class="vid" href="'+yt(ex.q)+'" target="_blank" rel="noopener">'+vidIcon+'Kyk video’s</a>'+(ex.slow?'<button class="slow" type="button" id="sl-'+ex.id+'" aria-pressed="false">Stadig</button>':'')+'</div>';
+    card.appendChild(body); grid.appendChild(card);
+    const c={ex,r,svg,badge,step,playing:!reduce,speed:1,clock:0,last:null,visible:true};
+    let still=0; for(let k=0;k<(ex.still||Math.min(1,ex.kf.length-1));k++){still+=(ex.kf[k].h||0)+(ex.kf[k].d==null?600:ex.kf[k].d);} c.clock=reduce?still:0;
+    const setBadge=()=>{badge.textContent=c.playing?'❚❚ Stop':'▶ Speel';};
+    st.addEventListener('click',()=>{c.playing=!c.playing;c.last=null;setBadge();});
+    if(ex.slow){const sb=body.querySelector('.slow');sb.addEventListener('click',()=>{const on=sb.getAttribute('aria-pressed')!=='true';sb.setAttribute('aria-pressed',on);c.speed=on?0.35:1;});}
+    setBadge(); draw(c,frame(ex,c.clock)); cards.push(c);
+    if('IntersectionObserver' in window){new IntersectionObserver(es=>es.forEach(e=>{c.visible=e.isIntersecting;}),{rootMargin:'100px'}).observe(st);}
+  });
+}
+function loop(now){
+  for(const c of cards){
+    if(!c.playing||!c.visible){c.last=null;continue;}
+    if(c.last!=null)c.clock+=(now-c.last)*c.speed; c.last=now;
+    draw(c,frame(c.ex,c.clock));
+  }
+  requestAnimationFrame(loop);
+}
+document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{tab=b.dataset.t;try{localStorage.setItem('gs-tab',tab);}catch(e){}render();}));
+document.querySelector('[role=tablist]').addEventListener('keydown',e=>{const ks=Object.keys(EX);let i=ks.indexOf(tab);if(e.key==='ArrowRight')i=(i+1)%ks.length;else if(e.key==='ArrowLeft')i=(i+ks.length-1)%ks.length;else return;tab=ks[i];render();document.getElementById('t-'+tab).focus();});
+document.querySelectorAll('.chip').forEach(b=>b.addEventListener('click',()=>{week=+b.dataset.w;try{localStorage.setItem('gs-week',week);}catch(e){}document.querySelectorAll('.card .dose').forEach((d,i)=>{if(cards[i])d.textContent=doseText(cards[i].ex);});document.querySelectorAll('.chip').forEach(x=>x.setAttribute('aria-pressed',String(+x.dataset.w===week)));}));
+
+/* rest timer */
+let left=0,iv=null; const tm=document.getElementById('tm'),tw=document.getElementById('tmw');
+const show=()=>{tm.textContent=Math.floor(left/60)+':'+String(left%60).padStart(2,'0');tm.classList.toggle('go',left>0);};
+function start(s){clearInterval(iv);left=s;tw.textContent='Rus… begin weer by 0:00';show();iv=setInterval(()=>{left--;if(left<=0){left=0;clearInterval(iv);tw.textContent='Klaar! Volgende stel.';}show();},1000);}
+document.getElementById('r60').onclick=()=>start(60);
+document.getElementById('r90').onclick=()=>start(90);
+document.getElementById('rst').onclick=()=>{clearInterval(iv);left=0;tw.textContent='Rus tussen stelle';show();};
+
+render(); requestAnimationFrame(loop);
+})();
+</script>
+
+</body>
+</html>
